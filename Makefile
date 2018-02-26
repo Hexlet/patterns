@@ -1,1 +1,2 @@
-# build: docker-compose build
+build:
+  docker-compose build

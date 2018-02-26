@@ -103,3 +103,8 @@ const ec2 = new AWS.EC2();
 ### Влияние
 
 + Повышает модульность
+
+### Реализации
+
+* javascript
+    * [Модуль](javascript/module)

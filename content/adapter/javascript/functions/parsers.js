@@ -18,10 +18,10 @@ const parsers = {
   },
 };
 
-export default format => (data) => {
-  const parse = parsers[format];
-  if (!parse) {
+export default format => {
+  const parser = parsers[format];
+  if (!parser) {
     throw new Error(`unkown format: ${format}`);
   }
-  return parse(data);
+  return parser;
 };

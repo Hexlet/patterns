@@ -19,20 +19,20 @@ import { parse } from 'ini';
 import { safeLoad } from 'js-yaml';
 
 const configPath = 'path/to/eslint';
-const ext = path.extname(configPath);
+const format = path.extname(configPath).slice(1);
 const data = fs.readSync(configPath);
 
 let config;
-if (ext === '') {
+if (format === '') {
   config = JSON.parse(data);
-} else if (ext === '.yml') {
+} else if (format === 'yml') {
   config = safeLoad(data);
-} else if (ext === '.ini') {
+} else if (format === 'ini') {
   config = parse(data);
 }
 ```
 
-Этот код можно немного улучшить воспользовавшись `switch`. Но главная проблема остается. Поддержка нового типа файла, потребует перезаписи всех мест где есть парсинг. Естественным решением в данной ситуации станет вынос логики парсинга в отдельный модуль:
+Этот код можно немного улучшить воспользовавшись `switch`. Но главная проблема остается. Поддержка нового типа файла, потребует перезаписи всех мест где есть парсинг. Естественным решением в данной ситуации, станет применение паттерна "фабрика" и вынос логики парсинга в отдельный модуль:
 
 ```javascript
 // parsers.js
@@ -43,12 +43,12 @@ import { safeLoad } from 'js-yaml';
 export default (format, data) => {
   switch(format) {
     case '':
-    case '.json':
+    case json:
       return JSON.parse(data);
-    case '.yaml':
-    case '.yml':
+    case yaml:
+    case yml:
       return safeLoad(data);
-    case '.ini':
+    case ini:
       return parse(data);
     default:
       throw new Error("unkown format: ${format}");
@@ -64,10 +64,10 @@ import path from 'path';
 import parse from './parsers';
 
 const configPath = 'path/to/eslint';
-const ext = path.extname(configPath);
+const format = path.extname(configPath).slice(1);
 const data = fs.readSync(configPath);
 
-const config = parse(ext, data);
+const config = parse(format, data);
 ```
 
 Следующим шагом можно повысить гибкость карирровав функцию парсинга:
@@ -102,10 +102,10 @@ import path from 'path';
 import getParser from './parsers';
 
 const configPath = 'path/to/eslint';
-const ext = path.extname(configPath);
+const format = path.extname(configPath).slice(1);
 const data = fs.readSync(configPath);
 
-const parse = getParser(ext);
+const parse = getParser(format);
 const config = parse(data);
 ```
 

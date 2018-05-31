@@ -6,19 +6,19 @@ const yamlParser = {
 };
 
 const parsers = {
-  '.json': {
+  json: {
     parse: JSON.parse,
     stringify: JSON.stringify,
   },
-  '.yaml': yamlParser,
-  '.yml': yamlParser,
-  '.ini': {
+  yaml: yamlParser,
+  yml: yamlParser,
+  ini: {
     parse: ini.parse,
     stringify: ini.stringify,
   },
 };
 
-export default format => {
+export default (format) => {
   const parser = parsers[format];
   if (!parser) {
     throw new Error(`unkown format: ${format}`);

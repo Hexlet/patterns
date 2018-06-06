@@ -123,5 +123,5 @@ const client = new pgAdapter('user:pass@localhost:5432/dbname');
 ### Реализации
 
 * javascript
-    * [Функции](javascript/functions)
+    * [Функции](javascript/function)
     * [Класс](javascript/class)

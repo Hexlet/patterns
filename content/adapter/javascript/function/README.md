@@ -1,176 +1,46 @@
 ### Адаптер (для функций)
 
-Программы на js, обычно, настраиваются с помощью модификации конфигурационных файлов. Например популярный линтер ESlint, проверяет наличие файла `.eslintrc`:
-
-```json
-{
-    "parser": "esprima",
-    "rules": {
-        "semi": "error"
-    }
-}
-```
-
-ESlint парсит этот файл как `json`. С другой стороны, ESlint позволяет создавать этот файл с расширением, например `.eslint.yml`. Он, так же, подхватывается автоматически, но рассматривается как yaml. Подробнее о всех вариантах можно прочитать в [документации](https://eslint.org/docs/user-guide/configuring). Внутри ESlint есть код, который читает и парсит данный файл с конфигурацией. Вот так он мог бы выглядеть:
+Самый простой пример использования адаптера - функции. Предположим что в нашем проекте есть функция, которая принимает на вход код в виде строки и возвращает HTML, в котором этот же код подсвечен для удобного отображения на странице. Такой задачей занимается, например, библиотека https://highlightjs.org/.
 
 ```javascript
-import fs from 'fs';
-import { parse } from 'ini';
-import { safeLoad } from 'js-yaml';
+// highlightBlock(code)
+import { highlightBlock } from 'highlightjs';
 
-const configPath = 'path/to/eslint';
-const format = path.extname(configPath).slice(1);
-const data = fs.readSync(configPath);
-
-let config;
-if (format === '') {
-  config = JSON.parse(data);
-} else if (format === 'yml') {
-  config = safeLoad(data);
-} else if (format === 'ini') {
-  config = parse(data);
-}
+const blocks = document.querySelectorAll('pre code');
+blocks.forEach(hljs.highlightBlock);
+// Тоже самое но с оборачиванием в функцию (чтобы увидеть интерфейс явно)
+// blocks.forEach(block => hljs.highlightBlock(block));
 ```
 
-Этот код можно немного улучшить воспользовавшись `switch`. Но главная проблема остается. Поддержка нового типа файла, потребует перезаписи всех мест где есть парсинг. Естественным решением в данной ситуации, станет применение паттерна "фабрика" и вынос логики парсинга в отдельный модуль:
+Наша функция выполняет трансляцию в HTML не самостоятельно, а использует для этого готовую функцию переданную на вход. Для этого подойдет та же библиотека `highlightjs`.
 
 ```javascript
-// parsers.js
+import { highlightBlock } from 'highlightjs';
+import { codeToHtml } from './convertors';
 
-import { parse } from 'ini';
-import { safeLoad } from 'js-yaml';
-
-export default (format, data) => {
-  switch(format) {
-    case '':
-    case json:
-      return JSON.parse(data);
-    case yaml:
-    case yml:
-      return safeLoad(data);
-    case ini:
-      return parse(data);
-    default:
-      throw new Error("unkown format: ${format}");
-  }
-};
+const code = /* ... */;
+const html = codeToHtml(code, highlightBlock);
 ```
 
-Клиентский код меняется так:
+Предполагается что внутри себя `codeToHtml`, выполняет какую-то дополнительную работу, иначе можно было бы вызвать `highlightBlock` сразу.
+
+Дальше по какой-то причине (возможно библиотека `highlightjs` нас перестала устраивать), мы решили поменять ее на другую библиотеку, назовем ее `prism`. И выяснилось сигнатура функции в `prism` не соответствует сигнатуре функции `highlightBlock`. Функция `highlight` принимает исходный код вторым параметром, а не первым.
 
 ```javascript
-import fs from 'fs';
-import path from 'path';
-import parse from './parsers';
+import highlight from 'prism';
 
-const configPath = 'path/to/eslint';
-const format = path.extname(configPath).slice(1);
-const data = fs.readSync(configPath);
-
-const config = parse(format, data);
+const options = {};
+const code = /* ... */;
+highlight(options, code);
 ```
 
-Следующим шагом можно повысить гибкость карирровав функцию парсинга:
+Чтобы начать использовать `highlight` в нашем коде, можно сделать две вещи. Первая, переписать содержимое `codeToHtml` так чтобы она работала с новой сигнатурой. Такой выход вполне допустим, но не всегда. Например кода может быть слишком много или мы можем быть не уверены что остановимся на новой библиотеке. Возможна ситуация в которой мы захотим попеременно использовать либо `highlightjs` либо `prism`. Во всех этих ситуациях подойдет второй выход - Адаптер. На практике, все сводится к оборачиванию исходной функции в функцию с нужной сигнатурой.
 
 ```javascript
-// parsers.js
+import highlight from 'prism';
+import { codeToHtml } from './convertors';
 
-import { parse } from 'ini';
-import { safeLoad } from 'js-yaml';
-
-export default format => (data) => {
-  switch(format) {
-    case '':
-    case '.json':
-      return JSON.parse(data);
-    case '.yaml':
-    case '.yml':
-      return safeLoad(data);
-    case '.ini':
-      return parse(data);
-    default:
-      throw new Error("unkown format: ${format}");
-  }
-};
+const code = /* ... */;
+const newHighlight = code => highlight({}, code); // в опции передается {} как значение по-умолчанию
+const html = codeToHtml(code, newHighlight);
 ```
-
-Клиентский код меняется так:
-
-```javascript
-import fs from 'fs';
-import path from 'path';
-import getParser from './parsers';
-
-const configPath = 'path/to/eslint';
-const format = path.extname(configPath).slice(1);
-const data = fs.readSync(configPath);
-
-const parse = getParser(format);
-const config = parse(data);
-```
-
-Теперь можно один раз получить парсер для конкретного типа данных и использовать его повторно без указания формата.
-
-Внутреннюю реализацию парсинга можно сделать еще привлекательнее:
-
-```javascript
-// parsers.js
-
-import ini from 'ini';
-import { safeLoad } from 'js-yaml';
-
-const parsers = {
-  '.json': JSON.parse,
-  '.yaml': safeLoad,
-  '.yml': safeLoad,
-  '.ini': ini.parse,
-};
-
-export default format => (data) => {
-  const parse = parsers[format];
-  if (!parse) {
-    throw new Error("unkown format: ${format}");
-  }
-  return parse(data);
-};
-```
-
-Теперь вместо свитча используется диспетчеризация по свойству объекта.
-
-Дальнейшее развитие событий зависит от возникающих потребностей. Предположим что кроме парсинга, понадобилась точно такая же функциональность, но в обратную сторону. Нужно создавать или обновлять конфигурацию в разных форматах. Тогда вместо возврата функции, необходим возврат объектов с нужным набором функций:
-
-```javascript
-// parsers.js
-
-import ini from 'ini';
-import { safeLoad, safeDump } from 'js-yaml';
-
-const yamlParser = {
-  parse: safeLoad, stringify: safeDump,
-};
-
-const parsers = {
-  '.json': {
-    parse: JSON.parse,
-    stringify: JSON.stringify,
-  },
-  '.yaml': yamlParser,
-  '.yml': yamlParser,
-  '.ini': {
-    parse: ini.parse,
-    stringify: ini.stringify,
-  },
-};
-
-export default format => {
-  const parser = parsers[format];
-  if (!parser) {
-    throw new Error(`unkown format: ${format}`);
-  }
-  return parser;
-};
-```
-
-Если кода становится больше, то можно применить **Фасад (Модуль)** и разделить парсеры по своим собственным файлам.
-
-На этом этапе, у некоторых программистов может возникнуть вопрос, "а почему не классы"? Можно и классы, но лучше не надо. JS гибкий язык, в котором код можно структурировать тем способом, который наиболее релевантен задаче. В кейсе описанном выше используются чистые функции и отсутствует внутреннее изменяемое состояние, которое есть в случае адаптеров для базы данных - соединение с базой.

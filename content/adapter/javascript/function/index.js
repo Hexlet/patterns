@@ -1,11 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import getParser from './parsers';
+import highlight from 'prism';
+import { codeToHtml } from './convertors';
 
-const configPath = 'path/to/eslint';
-const format = path.extname(configPath).slice(1);
-const data = fs.readSync(configPath);
-
-const parser = getParser(format);
-const config = parser.parse(data);
-console.log(config);
+const code = "const x = '5';";
+const newHighlight = code => highlight({}, code);
+const html = codeToHtml(code, newHighlight);
+console.log(html);

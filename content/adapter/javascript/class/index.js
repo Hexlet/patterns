@@ -1,11 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import getParser from './parsers';
+import Markdown from 'markdown';
+import runApp from './app';
 
-const configPath = 'path/to/eslint';
-const format = path.extname(configPath).slice(1);
-const data = fs.readSync(configPath);
-
-const parser = getParser(format);
-const config = parser.parse(data);
-console.log(config);
+export default () => {
+  const md = new Markdown();
+  runApp(md);
+};

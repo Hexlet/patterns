@@ -8,7 +8,7 @@ import { highlightBlock } from 'highlightjs';
 
 const blocks = document.querySelectorAll('pre code');
 blocks.forEach(hljs.highlightBlock);
-// Тоже самое но с оборачиванием в функцию (чтобы увидеть интерфейс явно)
+// Тоже самое, но с оборачиванием в функцию (чтобы увидеть интерфейс явно)
 // blocks.forEach(block => hljs.highlightBlock(block));
 ```
 

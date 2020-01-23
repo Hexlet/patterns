@@ -42,7 +42,7 @@ import ini from 'ini';
 import yaml from 'js-yaml';
 
 const configPath = 'path/to/eslint';
-const ext = path.extname(configPath);
+const format = path.extname(configPath);
 const data = fs.readSync(configPath);
 
 // Выбирается функция-парсер в зависимости от расширения файла

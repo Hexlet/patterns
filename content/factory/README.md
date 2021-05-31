@@ -15,7 +15,7 @@ import _ from 'lodash';
 // Cart принимает на вход список товаров (items),
 // но они хранятся в файле в определенном формате,
 // который сначала нужно прочитать и привести данные в вид подходящий для Cart
-const content = fs.fileReadSync(filepath, 'utf-8');
+const content = fs.readFileSync(filepath, 'utf-8');
 const items = _.flatten(content.split('\n').map(item => item.split(':')));
 const cart = new Cart(items);
 ```
@@ -69,7 +69,7 @@ import fs from 'fs';
 import _ from 'lodash';
 
 const buildCart = (filepath) => {
-  const content = fs.fileReadSync(filepath, 'utf-8');
+  const content = fs.readFileSync(filepath, 'utf-8');
   const items = _.flatten(content.split('\n').map(item => item.split(':')));
   return new Cart(items);
 }

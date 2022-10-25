@@ -7,9 +7,9 @@
 import { highlightBlock } from 'highlightjs';
 
 const blocks = document.querySelectorAll('pre code');
-blocks.forEach(hljs.highlightBlock);
+blocks.forEach(highlightBlock);
 // Тоже самое, но с оборачиванием в функцию (чтобы увидеть интерфейс явно)
-// blocks.forEach(block => hljs.highlightBlock(block));
+// blocks.forEach(block => highlightBlock(block));
 ```
 
 Наша функция выполняет трансляцию в HTML не самостоятельно, а использует для этого готовую функцию переданную на вход. Для этого подойдет та же библиотека `highlightjs`.
